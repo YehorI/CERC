@@ -1,0 +1,49 @@
+mapping: &berkut_lepsari
+  Дата: date
+  Время въезда на Объект Исполнителя: time
+  Время въезда на объект Исполнителя: time
+  Перевозчик: field
+  Марка ТС: vehicle_brand
+  Гос.номер ТС: vehicle_number
+  Объём ТКО по установленной вместимости кузова ТС, м³: volume
+  Объем ТКО по установленной вместимости кузова ТС, м3: volume
+  Вес машины, т_С отходами: gross_weight
+  Вес Машин, т_С отходами: gross_weight
+  Вес машины, т_без отходов: vehicle_weight
+  Вес Машин, т_Без отходов: vehicle_weight
+  Вес машины, т_Вес отходов: weight
+  Вес Машин, т_Вес отходов: weight
+
+  Примечания: note
+  Площадка_Парнас: is_parnas # need fix
+  Площадка_Ржевка: is_rzhevka # need fix
+
+
+Автоберкут:
+  load_kwargs:
+    header: [2, 3]
+  load_transformations:
+    - collapse_multiheader
+    - remove_empty_columns
+    - how: remove_columns
+      kwargs:
+        columns_to_exclude: ["п/п"]
+  column_mapping:
+    <<: *berkut_lepsari
+  coercions:
+    - how: remove_rows_with_na_of_certain_columns
+      kwargs:
+        columns: ["vehicle_number"]
+    - fix_vehicle_number
+Лепсари:
+  load_kwargs:
+    header: [6, 7]
+  load_transformations:
+    - collapse_multiheader
+    - how: remove_columns
+      kwargs:
+        columns_to_exclude: ["N п/п"]
+  column_mapping:
+    <<: *berkut_lepsari
+  coercions:
+    - fix_vehicle_number

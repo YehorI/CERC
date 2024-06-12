@@ -1,0 +1,10 @@
+Справочник ТС:
+  load_kwargs:
+    header: 3
+  load_transformations:
+  column_mapping:
+    Гос. номер: vehicle_number
+    Перевозчик: transporter
+    Генеральный перевозчик: general_transporter
+  coercions:
+    - fix_vehicle_number

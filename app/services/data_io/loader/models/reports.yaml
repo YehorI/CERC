@@ -1,0 +1,688 @@
+# some reports are month sensitive because of sheet_names
+# or containing data from the start of the year (see choose_month)
+
+common_coercions:
+  _to_tonnes_landfill_weight: &to_tonnes_landfill_weight
+    how: _to_tonnes
+    kwargs:
+      target_col: landfill_weight
+  _to_tonnes_weight: &to_tonnes_weight
+    how: _to_tonnes
+    kwargs:
+      target_col: weight
+
+ТЭК:
+  processing:
+    import:
+      load_kwargs:
+        sheet_name: null
+        header: 5
+      load_transformations:
+        - how: select_before_certain_value
+          kwargs:
+            value: Итого
+        - remove_empty_columns
+        - how: remove_columns
+          kwargs:
+            columns_to_exclude: ["Номер"]
+      column_mapping:
+        Дата: date
+        Время: time
+        Лот: waste_collection_zone
+        Контрагент: transporter
+        Автомобиль: vehicle_number
+        Вес: weight
+        Объем: volume
+      coercions:
+        - how: _to_tonnes
+          kwargs:
+            target_col: weight
+        - date_from_dotseparated
+
+    export:
+      load_kwargs:
+        sheet_name: null
+        header: null
+      load_transformations:
+        - how: select_after_certain_value
+          kwargs:
+            value: Вывоз
+            offset_after_value: 2
+        - how: select_before_certain_value
+          kwargs:
+            value: Итого
+        - how: remove_columns
+          kwargs:
+            columns_to_exclude: ["Номер"]
+        - remove_empty_columns
+      column_mapping:
+        Дата: date
+        Время: time
+        Контрагент: transporter
+        Автомобиль: vehicle_number
+        Полигон: landfill
+        Вес: weight
+        Вес полигона: landfill_weight
+        Объем: volume
+      coercions:
+        - how: _to_tonnes
+          kwargs:
+            target_col: weight
+        - *to_tonnes_landfill_weight
+        - date_from_dotseparated
+        - landfill_right_name
+
+
+БТС:
+  tranship:
+    import:
+      load_kwargs:
+        sheet_name: ВВОЗ
+      load_transformations:
+
+      column_mapping:
+        Дата: date
+        Время: time
+        Проверка: transporter
+        ТС: vehicle_number
+        "Масса нетто,\r\nт": weight
+        Объем: volume
+      coercions:
+        - how: _to_tonnes
+          kwargs:
+            target_col: weight
+        - how: choose_month
+          kwargs:
+            month_number: 6
+
+    export:
+      load_kwargs:
+        sheet_name: ВЫВОЗ
+      load_transformations:
+        - remove_empty_lines
+        - remove_empty_columns
+      column_mapping:
+        Дата: date
+        Время: time
+        Полигон: landfill
+        ТС: vehicle_number
+        Перевозчик: transporter
+        "Масса нетто (УЗ),\r\nт": weight
+        "Масса нетто (Полигон),\r\nт": landfill_weight
+        Масса брутто, т: gross_weight
+        Масса авто, т: vehicle_weight
+        Объем: volume
+        1 вес: weight_1
+        2 вес: weight_2
+      coercions:
+        - landfill_right_name
+        - how: _to_tonnes
+          kwargs:
+            target_col: weight
+        - *to_tonnes_landfill_weight
+        - how: choose_month
+          kwargs:
+            month_number: 6
+
+
+ecovastdefault_kwargs: &ecovastdefault_kwargs
+    - sheet_name: "Июнь 24"
+    - header: 3
+
+ecovastdefault_import_column_mapping: &parnas_import_column_mapping
+  Дата: date
+  Номер авто: vehicle_number
+  Наименование контрагента: counteragent #!!!
+  Наименование Конграгента: counteragent
+  Наименование объекта: field
+  Тип машины: waste_type
+  Вес полного авто: gross_weight
+  Вес пустого авто: vehicle_weight
+  Вес груза: weight
+  Объем кузова: volume
+  Допустимое значение уплотнения ТКО: allowable_density_of_msw
+  Перевозчик: transporter
+
+ecovastdefault_import_trans_column_mapping: &parnas_import_trans_column_mapping
+  Дата: date
+  Номер авто: vehicle_number
+  Наименование контрагента: counteragent
+  Склад: field
+  Получатель: company
+  Вес груза: weight
+  Перевозчик: transporter
+  Вес полного авто: gross_weight
+  Вес пустого авто: vehicle_weight
+  Тип машины: waste_type
+
+# both processing and tranship
+ecovastdefault_export_column_mapping: &parnas_export_column_mapping
+  Дата: date
+  Время размещения: time
+  Перевозчик: transporter
+  Полигон: landfill
+  ТС: vehicle_number
+  Передано: volume
+  Вес при выезде: weight
+  Вес на полигоне: landfill_weight
+
+
+Парнас:
+  processing:
+    import:
+      load_kwargs:
+        <<: *ecovastdefault_kwargs
+      load_transformations:
+        - remove_total
+      column_mapping: 
+        <<: *parnas_import_column_mapping
+      coercions:
+        - datetime2date
+        - how: _to_tonnes
+          kwargs:
+            target_col: weight
+
+    export:
+      load_kwargs:
+        <<: *ecovastdefault_kwargs
+      load_transformations:
+        - remove_total
+      column_mapping:
+        <<: *parnas_export_column_mapping
+      coercions:
+      - date_from_dotseparated
+      - landfill_right_name
+      - how: _to_tonnes
+        kwargs:
+          target_col: weight
+      - *to_tonnes_landfill_weight
+  tranship:
+    import:
+      load_kwargs:
+        <<: *ecovastdefault_kwargs
+        header: 2
+      load_transformations:
+        - how: filter_df_by
+          kwargs:
+            colname: "Склад"
+            fieldname: "Площадка Парнас"
+      column_mapping:
+        <<: *parnas_import_trans_column_mapping
+      coercions:
+        - datetime2date
+        - how: _to_tonnes
+          kwargs:
+            target_col: weight
+
+    export:
+      load_kwargs:
+        <<: *ecovastdefault_kwargs
+        header: 1
+      load_transformations:
+        - remove_total
+      column_mapping:
+        <<: *parnas_export_column_mapping
+      coercions:
+      - date_from_dotseparated
+      - landfill_right_name
+      - how: _to_tonnes
+        kwargs:
+          target_col: weight
+      - *to_tonnes_landfill_weight
+
+
+Софийская:
+  processing:
+    import:
+      load_kwargs:
+        <<: *ecovastdefault_kwargs
+      load_transformations:
+        - remove_total
+        - remove_empty_lines
+      column_mapping:
+        <<: *parnas_import_column_mapping
+      coercions:
+        - datetime2date
+        - how: _to_tonnes
+          kwargs:
+            target_col: weight
+
+    export:
+      load_kwargs:
+        <<: *ecovastdefault_kwargs
+      load_transformations:
+        - remove_total
+        - remove_empty_lines
+      column_mapping:
+        <<: *parnas_export_column_mapping
+      coercions:
+      - date_from_dotseparated
+      - landfill_right_name
+      - how: _to_tonnes
+        kwargs:
+          target_col: weight
+      - *to_tonnes_landfill_weight
+  
+  tranship:
+    import:
+      load_kwargs:
+        <<: *ecovastdefault_kwargs
+        header: 2
+      load_transformations:
+        - remove_empty_lines
+        - how: filter_df_by
+          kwargs:
+            colname: "Склад"
+            fieldname: "Площадка Софийская"
+      column_mapping:
+        <<: *parnas_import_trans_column_mapping
+      coercions:
+        - datetime2date
+        - how: _to_tonnes
+          kwargs:
+            target_col: weight
+
+    export:
+      load_kwargs:
+        <<: *ecovastdefault_kwargs
+        header: 1
+      load_transformations:
+        - remove_total
+        - remove_empty_lines
+      column_mapping:
+        <<: *parnas_export_column_mapping
+      coercions:
+      - date_from_dotseparated
+      - landfill_right_name
+      - how: _to_tonnes
+        kwargs:
+          target_col: weight
+      - *to_tonnes_landfill_weight
+
+
+Рыбацкое:
+  processing:
+    import:
+      load_kwargs:
+        <<: *ecovastdefault_kwargs
+      load_transformations:
+        - remove_total
+
+      column_mapping:
+        <<: *parnas_import_column_mapping
+    
+      coercions:
+        - datetime2date
+        - how: _to_tonnes
+          kwargs:
+            target_col: weight
+
+    export:
+      load_kwargs:
+        <<: *ecovastdefault_kwargs
+
+      load_transformations:
+        - remove_total
+
+      column_mapping:
+        <<: *parnas_export_column_mapping
+    
+      coercions:
+      - date_from_dotseparated
+      - landfill_right_name
+      - how: _to_tonnes
+        kwargs:
+          target_col: weight
+      - *to_tonnes_landfill_weight
+
+  tranship:
+    import:
+      load_kwargs:
+        <<: *ecovastdefault_kwargs
+        header: 2
+
+      load_transformations:
+        - how: filter_df_by
+          kwargs:
+            colname: "Склад"
+            fieldname: "Площадка Рыбацкое"
+
+      column_mapping:
+        <<: *parnas_import_trans_column_mapping
+
+      coercions:
+        - datetime2date
+        - how: _to_tonnes
+          kwargs:
+            target_col: weight
+
+    export:
+      load_kwargs:
+        <<: *ecovastdefault_kwargs
+        header: 1
+      load_transformations:
+        - remove_total
+
+      column_mapping:
+        <<: *parnas_export_column_mapping
+    
+      coercions:
+        - date_from_dotseparated
+        - landfill_right_name
+        - how: _to_tonnes
+          kwargs:
+            target_col: weight
+        - *to_tonnes_landfill_weight
+
+
+Волхонка:
+  processing:
+    import:
+      load_kwargs:
+        sheet_name: Ввоз
+      load_transformations:
+        - remove_empty_lines
+        - remove_empty_columns
+        - how: remove_columns
+          kwargs:
+            columns_to_exclude: ["М3"]
+      column_mapping:
+        Дата: date
+        Время: time
+        ТC: vehicle_number
+        ТС: vehicle_number
+        Перевозчик: transporter
+        Вид отходов: waste_type
+        "Масса нетто,\r\nт": weight
+        Масса брутто, т: gross_weight
+        Масса авто, т: vehicle_weight
+        # М3: volume исключил
+      coercions:
+        - how: remove_rows_with_na_of_certain_columns
+          kwargs:
+            columns: [date, time, weight]
+        - how: choose_month
+          kwargs:
+            month_number: 6
+
+    export:
+      load_kwargs:
+        sheet_name: Вывоз
+      load_transformations:
+        - remove_empty_columns
+        - remove_empty_lines
+      column_mapping:
+        Дата: date
+        Время: time
+        "Место разгрузки (Полигон) ": landfill
+        ТС: vehicle_number
+        Перевозчик: transporter
+        "Масса нетто,\r\nт": weight
+        "Масса нетто (Полигон),\r\nт": landfill_weight
+
+      coercions:
+        - landfill_right_name
+        - how: choose_month
+          kwargs:
+            month_number: 6
+
+
+avtoparkdefault_kwargs: &avtoparkdefault_kwargs
+  sheet_name: Июнь
+  header: 1
+
+
+Старообрядческая:
+  processing:
+    import:
+      load_kwargs:
+        <<: *avtoparkdefault_kwargs
+      load_transformations:
+        - how: remove_columns
+          kwargs:
+            columns_to_exclude: ["№"]
+        - how: skip_first_lines
+          kwargs:
+            n_lines: 1
+      column_mapping:
+        Дата: date
+        Время: time
+        Оператор по транспортированию: transporter
+        Наименование объекта: field
+        Регистрационный номер ТС: vehicle_number
+        Вид отходов: waste_type
+        Масса нетто, т: weight
+        Масса брутто, т: gross_weight
+        Объем кузова ТС, м3: volume
+        Допустимое значение уплотнения ТКО: allowable_density_of_msw
+      coercions:
+        - to_datetime
+
+    export:
+      load_kwargs:
+        <<: *avtoparkdefault_kwargs
+      load_transformations:
+        - how: remove_columns
+          kwargs:
+            columns_to_exclude: ["№", "Тип объекта"]
+        - how: skip_first_lines
+          kwargs:
+            n_lines: 1
+      column_mapping:
+        Дата: date
+        Время: time
+        Наименование объекта погрузки: field
+        Оператор по транспортированию: transporter
+        Регистрационный номер ТС: vehicle_number
+        Объем кузова ТС, м3: volume
+        Допустимое значение уплотнения ТКО: allowable_density_of_msw
+        Масса нетто, т: weight
+        Масса брутто, т: gross_weight
+        Масса авто, т: vehicle_weight
+        Наименование объекта разгрузки: landfill
+      coercions:
+        - to_datetime
+        - landfill_right_name
+        - how: duplicate_column
+          kwargs:
+            column: weight
+            to_column: landfill_weight
+            place: after
+
+
+Предпортовый:
+  processing:
+    import:
+      load_kwargs:
+        <<: *avtoparkdefault_kwargs
+      load_transformations:
+        - how: remove_columns
+          kwargs:
+            columns_to_exclude: ["№"]
+        - how: skip_first_lines
+          kwargs:
+            n_lines: 1
+      column_mapping:
+        Дата: date
+        Время: time
+        Оператор по транспортированию: transporter
+        Наименование объекта: field
+        Регистрационный номер ТС: vehicle_number
+        Вид отходов: waste_type
+        Масса нетто, т: weight
+        Масса брутто, т: gross_weight
+        Объем кузова ТС, м3: volume
+        Допустимое значение уплотнения ТКО: allowable_density_of_msw
+      coercions:
+        - to_datetime
+
+    export:
+      load_kwargs:
+        <<: *avtoparkdefault_kwargs
+      load_transformations:
+        - how: remove_columns
+          kwargs:
+            columns_to_exclude: ["№", "Тип объекта"]
+        - how: skip_first_lines
+          kwargs:
+            n_lines: 1
+      column_mapping:
+        Дата: date
+        Время: time
+        Наименование объекта погрузки: field
+        Оператор по транспортированию: transporter
+        Регистрационный номер ТС: vehicle_number
+        Объем кузова ТС, м3: volume
+        Допустимое значение уплотнения ТКО: allowable_density_of_msw
+        Масса нетто, т: weight
+        Масса брутто, т: gross_weight
+        Масса авто, т: vehicle_weight
+        Наименование объекта разгрузки: landfill
+      coercions:
+        - to_datetime
+        - landfill_right_name
+        - how: duplicate_column
+          kwargs:
+            column: weight
+            to_column: landfill_weight
+            place: after
+
+
+Бронка: # Эколэнд
+  processing:
+    import:
+      load_kwargs:
+        sheet_name: Июнь ввоз
+        header: 4
+      load_transformations:
+        - how: remove_columns
+          kwargs:
+            columns_to_exclude: ["Площадка"]
+      column_mapping:
+        Дата: date
+        Время: time
+        № Лота: waste_collection_zone
+        Наименование перевозчика: transporter
+        Место разгруза: field
+        Госномер ТС: vehicle_number
+        "Масса нетто,\r\nт": weight
+        Масса брутто, т: gross_weight
+        Масса авто: vehicle_weight
+      coercions:
+
+    export:
+      load_kwargs:
+        sheet_name: Июнь вывоз
+        header: 4
+      load_transformations:
+        - how: remove_columns
+          kwargs:
+            columns_to_exclude: ["Площадка"]
+      column_mapping:
+        "Дата ": date
+        Время: time
+        № Лота: waste_collection_zone
+        От куда забор: field
+        Наименование перевозчика: transporter
+        Марка АМ: vehicle_brand
+        Госномер ТС: vehicle_number
+        "Куда: Полигон": landfill
+        Вес на погрузке: weight
+        Вес на разгрузке: landfill_weight
+      coercions:
+        - how: _to_tonnes
+          kwargs:
+            target_col: weight
+        - *to_tonnes_landfill_weight
+        - landfill_right_name
+
+
+Ржевка:
+  tranship:
+    import:
+      load_kwargs:
+        sheet_name: ПРИВОЗ
+      load_transformations:
+
+      column_mapping:
+        Дата: date
+        Время: time
+        Лот: waste_collection_zone
+        Ген.перевозчик: general_transporter
+        Перевозчик: transporter
+        Наименование объекта: field
+        ТС: vehicle_number
+        Вид отходов: waste_type
+        "Масса нетто,\r\nкг": weight
+        "Масса брутто, кг": gross_weight
+        "Масса авто, кг": vehicle_weight
+        Геометрия: volume
+        Коэф. сжатия: compaction_ratio
+        Марка ТС: vehicle_brand
+        ФИО нач.смены: shift_supervisor_name
+        ночь/день: day_night
+        Примечание: note
+      coercions:
+        - how: _to_tonnes
+          kwargs:
+            target_col: weight
+        - date_from_dotseparated_super # check docs
+
+    export:
+      load_kwargs:
+        sheet_name: ВЫВОЗ
+      load_transformations:
+        - remove_empty_columns
+      column_mapping:
+        Дата: date
+        Время: time
+        Лот: waste_collection_zone
+        Куда: landfill
+        Ген.перевозчик: general_transporter
+        Перевозчик: transporter
+        Наименование объекта: field
+        ТС: vehicle_number
+        Вид отходов: waste_type
+        Масса нетто, кг: weight
+        Масса брутто, кг: gross_weight
+        Масса авто, кг: vehicle_weight
+        Геометрия: volume
+        Коэф. сжатия: compaction_ratio
+        Марка ТС: vehicle_brand
+        ФИО нач.смены: shift_supervisor_name
+        ночь/день: day_night
+        ВЕС ПОЛИГОНА: landfill_weight
+        Примечание (мед., хвосты и т.д): note
+      coercions:
+        - how: remove_non_numeric_symbols
+          kwargs:
+            column_name: landfill_weight
+        - how: _to_tonnes
+          kwargs:
+            target_col: weight
+        - how: _to_tonnes
+          kwargs:
+            target_col: landfill_weight
+        - date_from_dotseparated_super # check docs
+        - landfill_right_name
+
+
+Грузовой:
+  processing:
+    import:
+    export:
+      load_kwargs:
+        sheet_name: Вывоз
+      load_transformations:
+
+      column_mapping:
+        "Дата ": date
+        "Куда: Полигон": landfill
+        Вес на погрузке: weight
+        Вес на разгрузке: landfill_weight
+      coercions:
+        - date_from_dotseparated
+        - how: _to_tonnes
+          kwargs:
+            target_col: weight
+        - *to_tonnes_landfill_weight
