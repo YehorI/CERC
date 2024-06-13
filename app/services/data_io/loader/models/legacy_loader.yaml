@@ -1,0 +1,7 @@
+default:
+  d_im_load_kwargs: &d_im_load_kwargs
+    sheet_name: "Ввоз"
+  d_ex_load_kwargs: &d_ex_load_kwargs
+    sheet_name: "Вывоз"
+
+

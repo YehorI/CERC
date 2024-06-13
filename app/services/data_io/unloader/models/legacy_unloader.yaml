@@ -1,0 +1,192 @@
+Эковаст_default: &ecovast_default
+  processing:
+    import:
+      columns_to_exclude:
+        - allowable_density_of_msw
+        - stream_type
+        - stream_direction
+        - source
+        - report_name
+      column_coercions:
+        - how: to_dotseparated_date
+          column: date
+        - how: to_kilos
+          column: weight
+
+    export:
+      columns_to_exclude:
+        - stream_type
+        - stream_direction
+        - source
+        - report_name
+      column_coercions:
+        - how: to_dotseparated_date
+          column: date
+        - how: to_kilos
+          column: weight
+  
+  tranship:
+    import:
+      columns_to_exclude:
+        - source
+      column_coercions:
+        - how: to_dotseparated_date
+          column: date
+        - how: to_kilos
+          column: weight
+
+    export:
+      columns_to_exclude:
+        - source
+      column_coercions:
+        - how: to_dotseparated_date
+          column: date
+        - how: to_kilos
+          column: weight
+
+Парнас:
+  <<: *ecovast_default
+
+Рыбацкое:
+  <<: *ecovast_default
+
+Софийская:
+  <<: *ecovast_default
+
+ТЭК:
+  processing:
+    import:
+      columns_to_exclude:
+        - source
+      column_coercions:
+        - how: to_dotseparated_date
+          column: date
+        - how: to_kilos
+          column: weight
+
+    export:
+      columns_to_exclude:
+        - source
+      column_coercions:
+        - how: to_dotseparated_date
+          column: date
+        - how: to_kilos
+          column: weight
+        - how: to_kilos
+          column: landfill_weight
+
+БТС:
+  tranship:
+    import:
+      columns_to_exclude:
+        - source
+      column_coercions:
+        - how: to_dotseparated_date
+          column: date
+        - how: to_kilos
+          column: weight
+
+    export:
+      columns_to_exclude:
+        - source
+      column_coercions:
+        - how: to_dotseparated_date
+          column: date
+        - how: to_kilos
+          column: weight
+
+Автопарк_default: &avtopark_default
+  processing:
+    import:
+      columns_to_exclude:
+        - waste_type
+        - allowable_density_of_msw
+        - source
+      column_coercions:
+        - how: to_dotseparated_date
+          column: date
+        
+    export:
+      columns_to_exclude:
+        - volume
+        - allowable_density_of_msw
+        - gross_weight
+        - vehicle_weight
+      column_coercions:
+        - how: to_dotseparated_date
+          column: date
+
+
+Старообрядческая:
+  <<: *avtopark_default
+
+Предпортовый:
+  <<: *avtopark_default
+
+Волхонка:
+  processing:
+    import:
+      columns_to_exclude:
+        - source
+      column_coercions:
+        - how: to_dotseparated_date
+          column: date
+
+    export:
+      columns_to_exclude:
+        - source
+      column_coercions:
+        - how: to_dotseparated_date
+          column: date
+
+
+Бронка:
+  processing:
+    import:
+      columns_to_exclude:
+        - source
+      column_coercions:
+        - how: to_dotseparated_date
+          column: date
+    export:
+      columns_to_exclude:
+        - source
+      column_coercions:
+        - how: to_dotseparated_date
+          column: date
+        - how: to_kilos
+          column: weight
+
+
+Ржевка:
+  tranship:
+    import:
+      columns_to_exclude:
+        - source
+      column_coercions:
+        - how: to_dotseparated_date
+          column: date
+        - how: to_kilos
+          column: weight
+    export:
+      columns_to_exclude:
+        - source
+      column_coercions:
+        - how: to_dotseparated_date
+          column: date
+        - how: to_kilos
+          column: weight
+        - how: to_kilos
+          column: landfill_weight
+
+
+Грузовой:
+  processing:
+    export:
+      column_coercions:
+        - how: to_dotseparated_date
+          column: date
+        - how: to_kilos
+          column: weight
+        - how: to_kilos
+          column: landfill_weight
