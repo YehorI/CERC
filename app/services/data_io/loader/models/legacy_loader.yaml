@@ -5,3 +5,101 @@ default:
     sheet_name: "Вывоз"
 
 
+Шаблон:
+  processing:
+    import:
+      load_kwargs:
+      load_transformations:
+      column_mapping:
+      coercions:
+
+
+Парнас:
+  processing:
+    import:
+      load_kwargs:
+        <<: *d_im_load_kwargs
+      load_transformations:
+        - remove_total
+        - remove_empty_lines
+      column_mapping:
+        Дата: date
+        Госномер: vehicle_number
+        Наименование объекта: counteragent
+        Площадка: field
+        Тип машины: waste_type
+        Вес полного авто: gross_weight
+        Вес пустого авто: vehicle_weight
+        Масса нетто, т: weight
+        Объем кузова: body_volume
+        Перевозчик: transporter
+      coercions:
+        - date_from_dotseparated
+        - how: _to_tonnes
+          kwargs:
+            target_col: weight
+    export:
+      load_kwargs:
+        <<: *d_ex_load_kwargs
+      load_transformations:
+        - remove_total
+        - remove_empty_lines
+      column_mapping:
+        Дата: date
+        Время размещения: time
+        Перевозчик: transporter
+        Полигон: landfill
+        Госномер: vehicle_number
+        Передано: volume
+        Вес при выезде: weight
+        Вес на полигоне: landfill_weight
+      coercions:
+        - date_from_dotseparated
+        - how: _to_tonnes
+          kwargs:
+            target_col: weight
+        - how: _to_tonnes
+          kwargs:
+            target_col: landfill_weight
+  tranship:
+    import:
+      load_kwargs:
+        <<: *d_im_load_kwargs
+      load_transformations:
+      column_mapping:
+        Дата: date
+        Госномер: vehicle_number
+        Наименование контрагента: counteragent
+        Склад: field
+        Получатель: company
+        Вес полного авто: gross_weight
+        Вес пустого авто: vehicle_weight
+        Масса нетто, кг: weight
+        Тип машины: waste_type
+        Перевозчик: transporter
+      coercions:
+        - date_from_dotseparated
+        - how: _to_tonnes
+          kwargs:
+            target_col: weight
+    export:
+      load_kwargs:
+        <<: *d_ex_load_kwargs
+      load_transformations:
+      column_mapping:
+        Дата: date
+        Время размещения: time
+        Перевозчик: transporter
+        Полигон: landfill
+        Госномер: vehicle_number
+        Передано: volume
+        Вес при выезде: weight
+        Вес на полигоне: landfill_weight
+      coercions:
+        - date_from_dotseparated
+        - how: _to_tonnes
+          kwargs:
+            target_col: weight
+        - how: _to_tonnes
+          kwargs:
+            target_col: landfill_weight

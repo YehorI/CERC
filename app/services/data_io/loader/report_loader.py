@@ -4,12 +4,16 @@ from collections import OrderedDict
 from pathlib import Path
 
 import pandas as pd
+from pandas.errors import OptionError
 import numpy as np
 
 from .excel_loader import ExcelLoader
 from ..utils.yaml import UtilYAML
 
-pd.set_option('future.no_silent_downcasting', True)
+try:
+    pd.set_option('future.no_silent_downcasting', True)
+except OptionError as e:
+    print(e)
 
 
 class LoadTransformations():

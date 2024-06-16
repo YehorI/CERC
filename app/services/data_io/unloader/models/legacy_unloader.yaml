@@ -24,7 +24,9 @@
           column: date
         - how: to_kilos
           column: weight
-  
+        - how: to_kilos
+          column: landfill_weight
+
   tranship:
     import:
       columns_to_exclude:
@@ -43,6 +45,9 @@
           column: date
         - how: to_kilos
           column: weight
+        - how: to_kilos
+          column: landfill_weight
+
 
 Парнас:
   <<: *ecovast_default
